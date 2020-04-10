@@ -1,0 +1,42 @@
+﻿@model Catering.Models.ChatConfig
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<style>
+    html, body {
+        height: 100%
+    }
+
+    body {
+        margin: 0
+    }
+
+    #webchat {
+        height: 100%;
+        width: 100%;
+    }
+</style>
+<div id="webchat" role="main" />
+<script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
+<script>
+    const directLine = window.WebChat.createDirectLine({ token: '@Model.Token' });
+    
+    // We are creating the Web Chat store here so we can dispatch WEB_CHAT/SEND_MESSAGE action later.
+    // We are adding a new middleware to customize the behavior of DIRECT_LINE/INCOMING_ACTIVITY.
+    const store = window.WebChat.createStore(
+        {},
+        ({ dispatch }) => next => action => {
+            if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY') {
+                const activity = action.payload.activity;
+            }
+            
+            return next(action);
+        }
+    );
+    
+    window.WebChat.renderWebChat({
+        directLine: directLine,
+        store
+    }, document.getElementById('webchat'));
+</script>
