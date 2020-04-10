@@ -25,6 +25,8 @@
     },
     "Catering": {
       "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "http://localhost:2978/",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
