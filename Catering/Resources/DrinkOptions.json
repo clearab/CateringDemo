@@ -1,0 +1,45 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "What what you like to drink?",
+      "size": "Medium",
+      "weight": "Bolder"
+    },
+    {
+      "type": "ActionSet",
+      "actions": [
+        {
+          "type": "Action.Submit",
+          "title": "Coffee",
+          "data": {
+            "nextCardToSend": 2,
+            "currentCard": 1,
+            "option": "coffee"
+          }
+        },
+        {
+          "type": "Action.Submit",
+          "title": "Tea",
+          "data": {
+            "nextCardToSend": 2,
+            "currentCard": 1,
+            "option": "tea"
+          }
+        },
+        {
+          "type": "Action.Submit",
+          "title": "Water",
+          "data": {
+            "currentCard": 1,
+            "nextCardToSend": 2,
+            "option": "water"
+          }
+        }
+      ]
+    }
+  ],
+  "type": "AdaptiveCard",
+  "version": "1.2"
+}

@@ -1,0 +1,57 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Order confirmation",
+      "size": "Medium",
+      "weight": "Bolder"
+    },
+    {
+      "type": "TextBlock",
+      "text": "You've ordered:"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Entre: {Entre}"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Drink: {Drink}"
+    },
+    {
+      "type": "ActionSet",
+      "actions": [
+        {
+          "type": "Action.Submit",
+          "title": "Change Drink",
+          "data": {
+            "nextCardToSend": 1,
+            "currentCard": 2,
+            "option": ""
+          }
+        },
+        {
+          "type": "Action.Submit",
+          "title": "Change Entre",
+          "data": {
+            "nextCardToSend": 0,
+            "currentCard": 2,
+            "option": ""
+          }
+        },
+        {
+          "type": "Action.Submit",
+          "title": "Confirm Order",
+          "data": {
+            "nextCardToSend": 4,
+            "currentCard": 2,
+            "option": "confirm"
+          }
+        }
+      ]
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.2"
+}
