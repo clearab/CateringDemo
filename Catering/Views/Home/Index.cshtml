@@ -30,6 +30,22 @@
             if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY') {
                 const activity = action.payload.activity;
             }
+            else if (action.type === 'DIRECT_LINE/POST_ACTIVITY') {
+                let activity = action.payload.activity;
+                if (activity.type === 'message' && activity.channelData && activity.channelData.postBack) {
+                    let value = activity.value;
+                    activity.type = 'invoke';
+                    activity.name = 'adaptiveCard/action';
+                    activity.value = {
+                        "action": {
+                            "type": "Action.Execute",
+                            "id": "abc",
+                            "verb": "order",
+                            "data": value
+                        }
+                    };
+                }
+            }
             
             return next(action);
         }

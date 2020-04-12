@@ -10,6 +10,13 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Schema;
 using AdaptiveCards.Templating;
 using Newtonsoft.Json;
+using Catering.Cards;
+using Catering.Models;
+using System.Net;
+using Catering.Schema;
+using AdaptiveCards;
+using Newtonsoft.Json.Linq;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace Catering
 {
@@ -56,10 +63,86 @@ namespace Catering
             }
             else
             {
-                //user = new User();
-                await sendEntreCard(turnContext, cancellationToken);
+                await SendEntreCardMessage(turnContext, cancellationToken);
+            }
+        }
+
+        protected override async Task<InvokeResponse> OnInvokeActivityAsync(ITurnContext<IInvokeActivity> turnContext, CancellationToken cancellationToken)
+        {
+            if (AdaptiveCardRequestValidator.IsAdaptiveCardAction(turnContext))
+            {
+                var userSA = _userState.CreateProperty<User>(nameof(User));
+                var user = await userSA.GetAsync(turnContext, () => new User());
+
+                try
+                {
+                    AdaptiveCardRequest request = AdaptiveCardRequestValidator.ValidateRequest(turnContext);
+
+                    if (request.Action.Verb == "order")
+                    {
+                        var cardOptions = AdaptiveCardRequestValidator.ValidateAction<CardOptions>(request);
+
+                        // process action
+                        var responseBody = ProcessOrderAction(user, cardOptions);
+                        
+                        return CreateInvokeResponse(HttpStatusCode.OK, responseBody);
+                    }
+                    else
+                    {
+                        AdaptiveCardActionException.VerbNotSupported(request.Action.Type);
+                    }
+                }
+                catch (AdaptiveCardActionException e)
+                {
+                    return CreateInvokeResponse(HttpStatusCode.OK, e.Response);
+                }
             }
 
+            return null;
+        }
+
+        private AdaptiveCardResponse ProcessOrderAction(User user, CardOptions cardOptions)
+        {
+            if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Entre)
+            {
+                user.lunch.Entre = cardOptions.option;
+            }
+            else if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Drink)
+            {
+                user.lunch.Drink = cardOptions.option;
+            }
+
+            AdaptiveCardResponse responseBody = null;
+            switch ((Card)cardOptions.nextCardToSend)
+            {
+                case Card.Drink:
+                    responseBody = DrinkCardResponse();
+                    break;
+                case Card.Entre:
+                    responseBody = EntreCardResponse();
+                    break;
+                case Card.Review:
+                    responseBody = ReviewCardResponse(user);
+                    break;
+                case Card.ReviewAll:
+                    break;
+                case Card.Confirmation:
+                    responseBody = ConfirmationCardResponse();
+                    break;
+                default:
+                    throw new NotImplementedException("No card matches that nextCardToSend.");
+            }
+
+            return responseBody;
+        }
+
+        private static InvokeResponse CreateInvokeResponse(HttpStatusCode statusCode, object body = null)
+        {
+            return new InvokeResponse()
+            {
+                Status = (int)statusCode,
+                Body = body
+            };
         }
 
         private static async Task SendWelcomeMessageAsync(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -90,86 +173,101 @@ namespace Catering
             switch ((Card)data.nextCardToSend)
             {
                 case Card.Drink:
-                    await sendDrinkCard(turnContext, cancellationToken);
+                    await SendDrinkCardMessage(turnContext, cancellationToken);
                     break;
                 case Card.Entre:
-                    await sendEntreCard(turnContext, cancellationToken);
+                    await SendEntreCardMessage(turnContext, cancellationToken);
                     break;
                 case Card.Review:
-                    await sendReviewCard(turnContext, user, cancellationToken);
+                    await SendReviewCardMessage(turnContext, user, cancellationToken);
                     break;
                 case Card.ReviewAll:
-                    await sendReviewAllCard(turnContext, cancellationToken);
+                    await SendReviewAllCardMessage(turnContext, cancellationToken);
                     break;
                 case Card.Confirmation:
-                    await sendConfirmationCard(turnContext, cancellationToken);
+                    await SendConfirmationCardMessage(turnContext, cancellationToken);
                     break;
                 default:
                     throw new NotImplementedException("No card matches that nextCardToSend.");
             }
-
-
         }
 
-        private async Task sendDrinkCard(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
+        #region Cards As MessageActivities
+
+        private async Task SendDrinkCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
         {
-            var filePath = Path.Combine(".", "Resources", "DrinkOptions.json");
-            var card = CreateAdaptiveCardAttachment(filePath);
-
-            await turnContext.SendActivityAsync(MessageFactory.Attachment(card), cancellationToken);
+            await turnContext.SendActivityAsync(
+                MessageFactory.Attachment(new CardResource("DrinkOptions.json").AsAttachment()), cancellationToken);
         }
 
-        private async Task sendEntreCard(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
+        private async Task SendEntreCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
         {
-
-            var filePath = Path.Combine(".", "Resources", "EntreOptions.json");
-            var card = CreateAdaptiveCardAttachment(filePath);
-
-            await turnContext.SendActivityAsync(MessageFactory.Attachment(card), cancellationToken);
+            await turnContext.SendActivityAsync(
+                MessageFactory.Attachment(new CardResource("EntreOptions.json").AsAttachment()), cancellationToken);
         }
 
-        private async Task sendReviewCard(ITurnContext<IMessageActivity> turnContext, User user, CancellationToken cancellationToken)
+        private async Task SendReviewCardMessage(ITurnContext turnContext, User user, CancellationToken cancellationToken)
         {
-            var filePath = Path.Combine(".", "Resources", "ReviewOrder.json");
-            var lunchData = JsonConvert.SerializeObject(user.lunch);
-            var adaptiveCardJson = File.ReadAllText(filePath);
-
-            var transformer = new AdaptiveTransformer();
-            var cardJson = transformer.Transform(adaptiveCardJson, lunchData);
-
-            var adaptiveCardAttachment = new Attachment()
-            {
-                ContentType = "application/vnd.microsoft.card.adaptive",
-                Content = JsonConvert.DeserializeObject(cardJson),
-            };
-
-            await turnContext.SendActivityAsync(MessageFactory.Attachment(adaptiveCardAttachment), cancellationToken);
-
+            await turnContext.SendActivityAsync(
+                MessageFactory.Attachment(new CardResource("ReviewOrder.json").AsAttachment(user.lunch)), cancellationToken);
         }
 
-        private async Task sendReviewAllCard(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
+        private async Task SendConfirmationCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
+        {
+            await turnContext.SendActivityAsync(
+                MessageFactory.Attachment(new CardResource("Confirmation.json").AsAttachment()), cancellationToken);
+        }
+
+        private Task SendReviewAllCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        private async Task sendConfirmationCard(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
-        {
-            var filePath = Path.Combine(".", "Resources", "Confirmation.json");
-            var card = CreateAdaptiveCardAttachment(filePath);
+        #endregion
 
-            await turnContext.SendActivityAsync(MessageFactory.Attachment(card), cancellationToken);
-        }
+        #region Cards As InvokeResponses
 
-        private static Attachment CreateAdaptiveCardAttachment(string filePath)
+        private AdaptiveCardResponse CardResponse(string cardFileName)
         {
-            var adaptiveCardJson = File.ReadAllText(filePath);
-            var adaptiveCardAttachment = new Attachment()
+            return new AdaptiveCardResponse()
             {
-                ContentType = "application/vnd.microsoft.card.adaptive",
-                Content = JsonConvert.DeserializeObject(adaptiveCardJson),
+                StatusCode = 200,
+                Name = AdaptiveCard.ContentType,
+                Value = new CardResource(cardFileName).AsJson()
             };
-            return adaptiveCardAttachment;
         }
+
+        private AdaptiveCardResponse CardResponse<T>(string cardFileName, T data)
+        {
+            return new AdaptiveCardResponse()
+            {
+                StatusCode = 200,
+                Name = AdaptiveCard.ContentType,
+                Value = new CardResource(cardFileName).AsJson(data)
+            };
+        }
+
+        private AdaptiveCardResponse DrinkCardResponse()
+        {
+            return CardResponse("DrinkOptions.json");
+        }
+
+        private AdaptiveCardResponse EntreCardResponse()
+        {
+            return CardResponse("EntreOptions.json");
+        }
+
+        private AdaptiveCardResponse ReviewCardResponse(User user)
+        {
+            return CardResponse("ReviewOrder.json", user);
+        }
+
+        private AdaptiveCardResponse ConfirmationCardResponse()
+        {
+            return CardResponse("Confirmation.json");
+        }
+
+        #endregion
     }
 
     internal class CardOptions
@@ -179,11 +277,7 @@ namespace Catering
         public string option { get; set; }
     }
 
-    internal class Lunch
-    {
-        public string Drink { get; set; }
-        public string Entre { get; set; }
-    }
+   
 
     enum Card : int
     {
@@ -194,13 +288,5 @@ namespace Catering
         Confirmation = 4
     }
 
-    internal class User
-    {
-        public User()
-        {
-            this.lunch = new Lunch();
-        }
-        public string Name { get; set; }
-        public Lunch lunch { get; set; }
-    }
+    
 }
