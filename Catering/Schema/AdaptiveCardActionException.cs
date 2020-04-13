@@ -21,7 +21,7 @@ namespace Catering.Schema
             throw new AdaptiveCardActionException(new AdaptiveCardResponse()
             {
                 StatusCode = (int)statusCode,
-                Name = AdaptiveCardsConstants.Error,
+                Type = AdaptiveCardsConstants.Error,
                 Value = new Error()
                 {
                     Code = code,

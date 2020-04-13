@@ -237,7 +237,7 @@ namespace Catering
             return new AdaptiveCardResponse()
             {
                 StatusCode = 200,
-                Name = AdaptiveCard.ContentType,
+                Type = AdaptiveCard.ContentType,
                 Value = new CardResource(cardFileName).AsJObject()
             };
         }
@@ -247,7 +247,7 @@ namespace Catering
             return new AdaptiveCardResponse()
             {
                 StatusCode = 200,
-                Name = AdaptiveCard.ContentType,
+                Type = AdaptiveCard.ContentType,
                 Value = new CardResource(cardFileName).AsJObject(data)
             };
         }

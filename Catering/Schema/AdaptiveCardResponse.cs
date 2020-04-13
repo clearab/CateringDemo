@@ -11,8 +11,8 @@ namespace Catering.Schema
         [JsonProperty("statusCode")]
         public int StatusCode { get; set; }
 
-        [JsonProperty("name")]
-        public string Name { get; set; }
+        [JsonProperty("type")]
+        public string Type { get; set; }
 
         [JsonProperty("value")]
         public object Value { get; set; }
