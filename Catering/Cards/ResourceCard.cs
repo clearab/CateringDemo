@@ -35,6 +35,16 @@ namespace Catering.Cards
             return transformer.Transform(cardJson, cardData);
         }
 
+        public object AsJObject()
+        {
+            return JsonConvert.DeserializeObject(AsJson());
+        }
+
+        public object AsJObject<T>(T data)
+        {
+            return JsonConvert.DeserializeObject(AsJson(data));
+        }
+
         public Attachment AsAttachment()
         {
             return new Attachment()
