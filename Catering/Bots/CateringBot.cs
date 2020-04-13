@@ -35,10 +35,12 @@ namespace Catering
     {
         private const string WelcomeText = "This bot will introduce you to AdaptiveApps. Type anything to get started.";
         private BotState _userState;
+        private LunchRepository _lunchRepository;
 
-        public CateringBot(UserState userState)
+        public CateringBot(UserState userState, LunchRepository lunchRepository)
         {
             _userState = userState;
+            _lunchRepository = lunchRepository;
         }
 
         public override async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
@@ -72,7 +74,7 @@ namespace Catering
             if (AdaptiveCardRequestValidator.IsAdaptiveCardAction(turnContext))
             {
                 var userSA = _userState.CreateProperty<User>(nameof(User));
-                var user = await userSA.GetAsync(turnContext, () => new User());
+                var user = await userSA.GetAsync(turnContext, () => new User() { Id = turnContext.Activity.From.Id });
 
                 try
                 {
@@ -105,11 +107,11 @@ namespace Catering
         {
             if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Entre)
             {
-                user.lunch.Entre = cardOptions.option;
+                user.Lunch.Entre = cardOptions.option;
             }
             else if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Drink)
             {
-                user.lunch.Drink = cardOptions.option;
+                user.Lunch.Drink = cardOptions.option;
             }
 
             AdaptiveCardResponse responseBody = null;
@@ -125,8 +127,11 @@ namespace Catering
                     responseBody = ReviewCardResponse(user);
                     break;
                 case Card.ReviewAll:
+                    var latestOrders = _lunchRepository.GetLatestOrders();
+                    // TODO: show all the orders
                     break;
                 case Card.Confirmation:
+                    _lunchRepository.UpsertOrder(user);
                     responseBody = ConfirmationCardResponse();
                     break;
                 default:
@@ -163,11 +168,11 @@ namespace Catering
 
             if (data.option != null && (Card)data.currentCard == Card.Entre)
             {
-                user.lunch.Entre = data.option;
+                user.Lunch.Entre = data.option;
             }
             else if (data.option != null && (Card)data.currentCard == Card.Drink)
             {
-                user.lunch.Drink = data.option;
+                user.Lunch.Drink = data.option;
             }
 
             switch ((Card)data.nextCardToSend)
@@ -209,7 +214,7 @@ namespace Catering
         private async Task SendReviewCardMessage(ITurnContext turnContext, User user, CancellationToken cancellationToken)
         {
             await turnContext.SendActivityAsync(
-                MessageFactory.Attachment(new CardResource("ReviewOrder.json").AsAttachment(user.lunch)), cancellationToken);
+                MessageFactory.Attachment(new CardResource("ReviewOrder.json").AsAttachment(user.Lunch)), cancellationToken);
         }
 
         private async Task SendConfirmationCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)

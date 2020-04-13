@@ -9,9 +9,10 @@ namespace Catering.Models
     {
         public User()
         {
-            this.lunch = new Lunch();
+            this.Lunch = new Lunch();
         }
+        public string Id { get; set; }
         public string Name { get; set; }
-        public Lunch lunch { get; set; }
+        public Lunch Lunch { get; set; }
     }
 }
