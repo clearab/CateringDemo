@@ -11,8 +11,9 @@
     body {
         margin: 0px;
     }
+
     #webchat {
-        position:absolute;
+        position: absolute;
         top: 100px;
         left: 25px;
         height: 750px;
@@ -21,6 +22,7 @@
         border-color: black;
         border-width: 2px;
     }
+
     #title {
         margin-left: 25px;
     }
@@ -31,9 +33,10 @@
 </div>
 
 <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
+<script src="~/directLine.js"></script>
 <script>
-    const directLine = window.WebChat.createDirectLine({ token: '@Model.Token' });
-    
+    const directLine = new DirectLine.DirectLine({ token: '@Model.Token' });
+
     // We are creating the Web Chat store here so we can dispatch WEB_CHAT/SEND_MESSAGE action later.
     // We are adding a new middleware to customize the behavior of DIRECT_LINE/INCOMING_ACTIVITY.
     const store = window.WebChat.createStore(
@@ -58,11 +61,11 @@
                     };
                 }
             }
-            
+
             return next(action);
         }
     );
-    
+
     window.WebChat.renderWebChat({
         directLine: directLine,
         store
