@@ -35,13 +35,18 @@
 <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
 <script src="~/directLine.js"></script>
 <script>
-    const directLine = new DirectLine.DirectLine({ token: '@Model.Token' });
+    const directLine = new DirectLine.DirectLine({
+        token: '@Model.Token',
+        domain: '@Model.Domain'
+    });
 
     // We are creating the Web Chat store here so we can dispatch WEB_CHAT/SEND_MESSAGE action later.
     // We are adding a new middleware to customize the behavior of DIRECT_LINE/INCOMING_ACTIVITY.
     const store = window.WebChat.createStore(
         {},
         ({ dispatch }) => next => action => {
+            let processed = false;
+
             if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY') {
                 const activity = action.payload.activity;
             }
@@ -59,10 +64,30 @@
                             "data": value
                         }
                     };
+
+                    // send the invoke manually
+                    directLine.postActivity(activity, true).subscribe(
+                        response => {
+                            if (response !== 'retry') {
+                                // look at the adaptive card
+                                console.log(response);
+                            }
+                            else {
+                                return next(action);
+                            }
+                        },
+                        error => {
+                            return next(action);
+                        }
+                    );
+
+                    processed = true;
                 }
             }
 
-            return next(action);
+            if (!processed) {
+                return next(action);
+            }
         }
     );
 
