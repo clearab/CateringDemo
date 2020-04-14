@@ -2,14 +2,10 @@
 using Microsoft.Bot.Schema;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 
-namespace Catering.Schema
+namespace Microsoft.Bot.AdaptiveCards
 {
-    public class AdaptiveCardRequestValidator
+    public class AdaptiveCardInvokeValidator
     {
         public static bool IsAdaptiveCardAction(ITurnContext turnContext)
         {
@@ -17,10 +13,10 @@ namespace Catering.Schema
                 string.Equals(AdaptiveCardAction.Name, turnContext.Activity.Name);
         }
 
-        public static AdaptiveCardRequest ValidateRequest(ITurnContext turnContext)
+        public static AdaptiveCardInvoke ValidateRequest(ITurnContext turnContext)
         {
             var activity = turnContext.Activity;
-            AdaptiveCardRequest request = null;
+            AdaptiveCardInvoke request = null;
 
             if (activity.Value == null)
             {
@@ -29,7 +25,7 @@ namespace Catering.Schema
 
             try
             {
-                request = ((JObject)turnContext.Activity.Value).ToObject<AdaptiveCardRequest>();
+                request = ((JObject)turnContext.Activity.Value).ToObject<AdaptiveCardInvoke>();
             }
             catch(Exception)
             {
@@ -49,7 +45,7 @@ namespace Catering.Schema
             return request;
         }
 
-        public static T ValidateAction<T>(AdaptiveCardRequest request)
+        public static T ValidateAction<T>(AdaptiveCardInvoke request)
         {
             if (request.Action.Data == null)
             {

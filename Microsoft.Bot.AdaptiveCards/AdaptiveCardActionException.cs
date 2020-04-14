@@ -5,20 +5,20 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Catering.Schema
+namespace Microsoft.Bot.AdaptiveCards
 {
     public class AdaptiveCardActionException : Exception
     {
-        AdaptiveCardActionException(AdaptiveCardResponse response)
+        AdaptiveCardActionException(AdaptiveCardInvokeResponse response)
         {
             Response = response;
         }
 
-        public AdaptiveCardResponse Response { get; private set; }
+        public AdaptiveCardInvokeResponse Response { get; private set; }
 
         public static void ErrorResponse(HttpStatusCode statusCode, string code, string message)
         {
-            throw new AdaptiveCardActionException(new AdaptiveCardResponse()
+            throw new AdaptiveCardActionException(new AdaptiveCardInvokeResponse()
             {
                 StatusCode = (int)statusCode,
                 Type = AdaptiveCardsConstants.Error,
