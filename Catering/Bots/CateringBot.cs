@@ -13,10 +13,10 @@ using Newtonsoft.Json;
 using Catering.Cards;
 using Catering.Models;
 using System.Net;
-using Catering.Schema;
 using AdaptiveCards;
 using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices.ComTypes;
+using Microsoft.Bot.AdaptiveCards;
 
 namespace Catering
 {
@@ -71,18 +71,18 @@ namespace Catering
 
         protected override async Task<InvokeResponse> OnInvokeActivityAsync(ITurnContext<IInvokeActivity> turnContext, CancellationToken cancellationToken)
         {
-            if (AdaptiveCardRequestValidator.IsAdaptiveCardAction(turnContext))
+            if (AdaptiveCardInvokeValidator.IsAdaptiveCardAction(turnContext))
             {
                 var userSA = _userState.CreateProperty<User>(nameof(User));
                 var user = await userSA.GetAsync(turnContext, () => new User() { Id = turnContext.Activity.From.Id });
 
                 try
                 {
-                    AdaptiveCardRequest request = AdaptiveCardRequestValidator.ValidateRequest(turnContext);
+                    AdaptiveCardInvoke request = AdaptiveCardInvokeValidator.ValidateRequest(turnContext);
 
                     if (request.Action.Verb == "order")
                     {
-                        var cardOptions = AdaptiveCardRequestValidator.ValidateAction<CardOptions>(request);
+                        var cardOptions = AdaptiveCardInvokeValidator.ValidateAction<CardOptions>(request);
 
                         // process action
                         var responseBody = ProcessOrderAction(user, cardOptions);
@@ -103,7 +103,7 @@ namespace Catering
             return null;
         }
 
-        private AdaptiveCardResponse ProcessOrderAction(User user, CardOptions cardOptions)
+        private AdaptiveCardInvokeResponse ProcessOrderAction(User user, CardOptions cardOptions)
         {
             if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Entre)
             {
@@ -114,7 +114,7 @@ namespace Catering
                 user.Lunch.Drink = cardOptions.option;
             }
 
-            AdaptiveCardResponse responseBody = null;
+            AdaptiveCardInvokeResponse responseBody = null;
             switch ((Card)cardOptions.nextCardToSend)
             {
                 case Card.Drink:
@@ -232,9 +232,9 @@ namespace Catering
 
         #region Cards As InvokeResponses
 
-        private AdaptiveCardResponse CardResponse(string cardFileName)
+        private AdaptiveCardInvokeResponse CardResponse(string cardFileName)
         {
-            return new AdaptiveCardResponse()
+            return new AdaptiveCardInvokeResponse()
             {
                 StatusCode = 200,
                 Type = AdaptiveCard.ContentType,
@@ -242,9 +242,9 @@ namespace Catering
             };
         }
 
-        private AdaptiveCardResponse CardResponse<T>(string cardFileName, T data)
+        private AdaptiveCardInvokeResponse CardResponse<T>(string cardFileName, T data)
         {
-            return new AdaptiveCardResponse()
+            return new AdaptiveCardInvokeResponse()
             {
                 StatusCode = 200,
                 Type = AdaptiveCard.ContentType,
@@ -252,22 +252,22 @@ namespace Catering
             };
         }
 
-        private AdaptiveCardResponse DrinkCardResponse()
+        private AdaptiveCardInvokeResponse DrinkCardResponse()
         {
             return CardResponse("DrinkOptions.json");
         }
 
-        private AdaptiveCardResponse EntreCardResponse()
+        private AdaptiveCardInvokeResponse EntreCardResponse()
         {
             return CardResponse("EntreOptions.json");
         }
 
-        private AdaptiveCardResponse ReviewCardResponse(User user)
+        private AdaptiveCardInvokeResponse ReviewCardResponse(User user)
         {
             return CardResponse("ReviewOrder.json", user);
         }
 
-        private AdaptiveCardResponse ConfirmationCardResponse()
+        private AdaptiveCardInvokeResponse ConfirmationCardResponse()
         {
             return CardResponse("Confirmation.json");
         }

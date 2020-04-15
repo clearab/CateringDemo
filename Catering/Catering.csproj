@@ -14,6 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Bot.AdaptiveCards\Microsoft.Bot.AdaptiveCards.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Update="appsettings*.json">
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
