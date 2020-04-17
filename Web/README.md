@@ -1,4 +1,6 @@
-# Web Chat
+# Web Chat with Adaptive Cards AAF
+
+![Short demo showing Web Chat with Adaptive Cards AAF](docs/demo1.gif)
 
 ## How to develop
 
