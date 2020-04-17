@@ -1,0 +1,22 @@
+{
+  "name": "web",
+  "version": "0.0.0-0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "bootstrap": "lerna bootstrap",
+    "build": "lerna run build",
+    "clean": "lerna clean --yes",
+    "postbuild": "copy externals\\adaptivecards-aaf\\dist\\* public\\externals",
+    "postinstall": "npm run bootstrap",
+    "start": "serve public"
+  },
+  "author": "William Wong <compulim@hotmail.com> (http://compulim.info/)",
+  "license": "MIT",
+  "devDependencies": {
+    "lerna": "^3.20.2",
+    "serve": "11.3.0",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11"
+  }
+}
