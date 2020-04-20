@@ -1,0 +1,18 @@
+{
+  "name": "external",
+  "version": "0.0.0-0",
+  "description": "- `AdaptiveCards-ts-renderer-refactor` is copied from https://github.com/microsoft/AdaptiveCards/tree/ts/renderer-refactor/source/nodejs/adaptivecards\r - `AdaptiveCards-ts-aaf` is copied from https://github.com/microsoft/AdaptiveCards/tree/ts/aaf/source/nodejs/adaptivecards-aaf/",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "William Wong <compulim@hotmail.com> (http://compulim.info/)",
+  "license": "MIT",
+  "devDependencies": {
+    "copy-webpack-plugin": "^5.1.1",
+    "html-webpack-plugin": "^4.2.0",
+    "mini-css-extract-plugin": "^0.9.0",
+    "ts-loader": "^7.0.0",
+    "typescript": "^3.5.3"
+  }
+}
