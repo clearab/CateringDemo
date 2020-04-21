@@ -1,0 +1,131 @@
+﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Bot.Builder;
+using Microsoft.Bot.Schema;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Model = Catering.Models;
+
+namespace Catering
+{
+    public class CateringDb
+    {
+        private string _endpointUri;
+        private string _primaryKey;
+
+        // Cosmos client 
+        private CosmosClient _cosmosClient;
+        private Lazy<Database> _database;
+        private Lazy<Container> _container;
+
+        private readonly string DatabaseId = "UserDB";
+        private readonly string ContainerId = "Orders";
+        private readonly string PartitionKeyValue = "AllUsers";
+
+        public CateringDb(IConfiguration configuration)
+        {
+            Configuration = configuration;
+
+            this._endpointUri = Configuration.GetSection("CosmosEndpointUri")?.Value;
+            this._primaryKey = Configuration.GetSection("CosmosKey")?.Value;
+
+            this._cosmosClient = new CosmosClient(_endpointUri, _primaryKey);
+            this._database = new Lazy<Database>(() =>
+            {
+                var task = this._cosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
+                task.Wait();
+                return task.Result;
+            }, isThreadSafe: true);
+
+            this._container = new Lazy<Container>(() =>
+            {
+                var task = this._database.Value.CreateContainerIfNotExistsAsync(ContainerId, "/partitionKey");
+                task.Wait();
+                return task.Result;
+            }, isThreadSafe: true);
+        }
+
+        public IConfiguration Configuration { get; set; }
+
+
+        //        public async Task<CosmosResult<User>> GetUsersAsync(string channelId, string conversationId, string continuationToken = null)
+        //        {
+        //            var sqlQueryTemplate = @"
+        //SELECT
+        //    c.id,
+        //    c.timestamp,
+        //    c.type = 'event' and c.name = null ? 'message' : c.type as type,
+        //    c.name,
+        //    c['from'].role = null ? c['from'].name : c['from'].role as fromName,
+        //    c.recipient.role = null ? c.recipient.name : c.recipient.role as toName,
+        //    c.text != null ? c.text : c.attachments[0].content.speak as text
+        //FROM c WHERE c.channelId = '{0}' and c.conversation.id = '{1}'";
+
+        //            var sqlQueryText = string.Format(sqlQueryTemplate, channelId, conversationId);
+
+        //            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+        //            FeedIterator<ActivityInfo> queryResultSetIterator = this._container.Value.GetItemQueryIterator<ActivityInfo>(queryDefinition, continuationToken);
+
+        //            CosmosResult<ActivityInfo> results = new CosmosResult<ActivityInfo>()
+        //            {
+        //                Items = new List<ActivityInfo>()
+        //            };
+
+        //            if (queryResultSetIterator.HasMoreResults)
+        //            {
+        //                FeedResponse<ActivityInfo> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+        //                results.ContinuationToken = currentResultSet.ContinuationToken;
+        //                foreach (var conversationInfo in currentResultSet)
+        //                {
+        //                    results.Items.Add(conversationInfo);
+        //                }
+        //            }
+
+        //            return results;
+        //        }
+
+        public async Task<CosmosResult<Model.User>> GetRecentOrdersAsync(string continuationToken = null)
+        {
+            var sqlQueryText = $"SELECT * FROM c ORDER BY c.lunch.orderTimestamp DESC OFFSET 0 LIMIT 5";
+
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+            FeedIterator<Model.User> queryResultSetIterator = this._container.Value.GetItemQueryIterator<Model.User>(queryDefinition, continuationToken);
+
+            CosmosResult<Model.User> results = new CosmosResult<Model.User>()
+            {
+                Items = new List<Model.User>()
+            };
+
+            if (queryResultSetIterator.HasMoreResults)
+            {
+                FeedResponse<Model.User> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                results.ContinuationToken = currentResultSet.ContinuationToken;
+                foreach (var conversationInfo in currentResultSet)
+                {
+                    results.Items.Add(conversationInfo);
+                }
+            }
+
+            return results;
+        }
+
+        public async Task<Model.User> AddOrderAsync(Model.User user)
+        {
+            if (user.Id == null)
+            {
+                user.Id = Guid.NewGuid().ToString("D");
+            }
+
+            user.PartitionKey = PartitionKeyValue;
+            user.Lunch.OrderTimestamp = DateTime.UtcNow;
+
+            ItemResponse<Model.User> response = await this._container.Value.CreateItemAsync<Model.User>(user, new PartitionKey(PartitionKeyValue));
+
+            return response.Resource;
+        }
+    }
+}
