@@ -264,7 +264,7 @@ namespace Catering
 
         private AdaptiveCardInvokeResponse ReviewCardResponse(User user)
         {
-            return CardResponse("ReviewOrder.json", user);
+            return CardResponse("ReviewOrder.json", user.Lunch);
         }
 
         private AdaptiveCardInvokeResponse ConfirmationCardResponse()
