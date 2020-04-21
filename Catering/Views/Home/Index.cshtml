@@ -3,96 +3,90 @@
     ViewData["Title"] = "Home Page";
 }
 
-<style>
-    html, body {
-        height: 100%
-    }
 
-    body {
-        margin: 0px;
-    }
+<script crossorigin="anonymous" src="https://unpkg.com/@@babel/standalone@7.8.7/babel.min.js"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/react@16.8.6/umd/react.development.js"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/react-dom@16.8.6/umd/react-dom.development.js"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/markdown-it/dist/markdown-it.min.js"></script>
+<script crossorigin="anonymous" src="https://cdn.botframework.com/botframework-webchat/4.8.0/webchat.js"></script>
 
-    #webchat {
-        position: absolute;
-        top: 100px;
-        left: 25px;
-        height: 750px;
-        width: 500px;
-        border: solid;
-        border-color: black;
-        border-width: 2px;
-    }
+<link href="index.css" rel="stylesheet" type="text/css" />
+<script src="aaf-attachment-middleware.js" type="text/babel">
+</script>
+<script src="adaptive-cards-2.js" type="text/babel">
+</script>
+<script src="default-channel-adapter.js" type="text/babel">
+</script>
+<script src="demo-card-attachment-middleware.js" type="text/babel">
+</script>
+<script src="demo-card-channel-adapter.js" type="text/babel">
+</script>
+<script src="demo-card.js" type="text/babel">
+</script>
+<script src="fetch-bot-token.js" type="text/babel">
+</script>
+<script src="redux-compose.js" type="text/babel">
+</script>
 
-    #title {
-        margin-left: 25px;
-    }
-</style>
-<div>
-    <h1 id="title">Adaptive Card Demo</h1>
-    <div id="webchat" role="main" />
-</div>
+<!-- The following files are built and copied from externals/AdaptiveCards-ts-aaf/dist -->
+<link href="externals/aaf.css" rel="stylesheet" type="text/css" />
+<link href="externals/adaptivecards.css" rel="stylesheet" type="text/css" />
+<script src="externals/aaf.js"></script>
 
-<script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
-<script src="~/directLine.js"></script>
-<script>
-    const directLine = new DirectLine.DirectLine({
-        token: '@Model.Token',
-        domain: '@Model.Domain'
-    });
+<!-- The following files are built and copied from DirectLineJS project -->
+<script src="externals/directLine.js"></script>
 
-    // We are creating the Web Chat store here so we can dispatch WEB_CHAT/SEND_MESSAGE action later.
-    // We are adding a new middleware to customize the behavior of DIRECT_LINE/INCOMING_ACTIVITY.
-    const store = window.WebChat.createStore(
-        {},
-        ({ dispatch }) => next => action => {
-            let processed = false;
+<div id="root"></div>
+<script  type="text/babel">
 
-            if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY') {
-                const activity = action.payload.activity;
-            }
-            else if (action.type === 'DIRECT_LINE/POST_ACTIVITY') {
-                let activity = action.payload.activity;
-                if (activity.type === 'message' && activity.channelData && activity.channelData.postBack) {
-                    let value = activity.value;
-                    activity.type = 'invoke';
-                    activity.name = 'adaptiveCard/action';
-                    activity.value = {
-                        "action": {
-                            "type": "Action.Execute",
-                            "id": "abc",
-                            "verb": "order",
-                            "data": value
-                        }
-                    };
+    (async function () {
+        // Imports.
+        const {
+            App: {
+                createAAFAttachmentMiddleware,
+                createDemoCardAttachmentMiddleware,
+                fetchBotToken
+            },
+            DirectLine: { DirectLine },
+            Redux: { compose },
+            WebChat: { createStore, renderWebChat }
+        } = window;
 
-                    // send the invoke manually
-                    directLine.postActivity(activity, true).subscribe(
-                        response => {
-                            if (response !== 'retry') {
-                                // look at the adaptive card
-                                console.log(response);
-                            }
-                            else {
-                                return next(action);
-                            }
-                        },
-                        error => {
-                            return next(action);
-                        }
-                    );
+        const directLine = new DirectLine({
+            token: '@Model.Token',
+            domain: '@Model.Domain'
+        });
 
-                    processed = true;
-                }
-            }
+        const store = createStore({}, ({ dispatch }) => next => action => {
+            //// TODO: Remove this. This is for dev RTT, so we don't need to type anything after F5.
+            //action.type === 'DIRECT_LINE/CONNECT_FULFILLED' &&
+            //    dispatch({
+            //        type: 'WEB_CHAT/SEND_MESSAGE',
+            //        payload: {
+            //            text: 'card markdown'
+            //        }
+            //    });
 
-            if (!processed) {
-                return next(action);
-            }
-        }
-    );
+            return next(action);
+        });
 
-    window.WebChat.renderWebChat({
-        directLine: directLine,
-        store
-    }, document.getElementById('webchat'));
+        // This is composing 2 middlewares into a single middleware.
+        const attachmentMiddleware = options => {
+            const middlewares = [
+                //createDemoCardAttachmentMiddleware({ directLine }),
+                createAAFAttachmentMiddleware({ directLine })
+            ];
+
+            return compose(...middlewares.map(middleware => middleware(options)));
+        };
+
+        renderWebChat(
+            {
+                attachmentMiddleware,
+                directLine,
+                store
+            },
+            document.getElementById('root')
+        );
+    })().catch(err => console.error(err));
 </script>

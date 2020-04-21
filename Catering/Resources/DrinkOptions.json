@@ -1,5 +1,6 @@
 {
   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "appId": "86ee312e-e8f2-4a03-9515-4ac80986abd5",
   "body": [
     {
       "type": "TextBlock",
@@ -11,7 +12,8 @@
       "type": "ActionSet",
       "actions": [
         {
-          "type": "Action.Submit",
+          "type": "Action.Execute",
+          "verb": "order",
           "title": "Coffee",
           "data": {
             "nextCardToSend": 2,
@@ -20,7 +22,8 @@
           }
         },
         {
-          "type": "Action.Submit",
+          "type": "Action.Execute",
+          "verb": "order",
           "title": "Tea",
           "data": {
             "nextCardToSend": 2,
@@ -29,7 +32,8 @@
           }
         },
         {
-          "type": "Action.Submit",
+          "type": "Action.Execute",
+          "verb": "order",
           "title": "Water",
           "data": {
             "currentCard": 1,

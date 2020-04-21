@@ -1,5 +1,6 @@
 {
   "type": "AdaptiveCard",
+  "appId": "86ee312e-e8f2-4a03-9515-4ac80986abd5",
   "body": [
     {
       "type": "TextBlock",
@@ -11,7 +12,8 @@
       "type": "ActionSet",
       "actions": [
         {
-          "type": "Action.Submit",
+          "type": "Action.Execute",
+          "verb": "order",
           "title": "Chicken",
           "data": {
             "nextCardToSend": 1,
@@ -20,7 +22,8 @@
           }
         },
         {
-          "type": "Action.Submit",
+          "type": "Action.Execute",
+          "verb": "order",
           "title": "Beef",
           "data": {
             "nextCardToSend": 1,
@@ -29,11 +32,12 @@
           }
         },
         {
-          "type": "Action.Submit",
+          "type": "Action.Execute",
+          "verb": "order",
           "title": "Vegan",
           "data": {
             "nextCardToSend": 1,
-            "currentCard":  0,
+            "currentCard": 0,
             "option": "vegan"
           }
         }
