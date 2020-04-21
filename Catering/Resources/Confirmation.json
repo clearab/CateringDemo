@@ -15,17 +15,11 @@
       "horizontalAlignment": "Center"
     },
     {
-      "type": "TextBlock",
-      "text": "NOTE: The action below isn't implemented yet, it will throw an exception.",
-      "horizontalAlignment": "Center",
-      "wrap": true
-    },
-    {
       "type": "ActionSet",
       "actions": [
         {
           "type": "Action.Execute",
-          "title": "See everyone's orders",
+          "title": "See Recent Orders",
           "verb":  "order",
           "data": {
             "nextCardToSend": 3,

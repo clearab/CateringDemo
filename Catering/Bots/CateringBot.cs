@@ -17,6 +17,7 @@ using AdaptiveCards;
 using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using Microsoft.Bot.AdaptiveCards;
+using System.Linq;
 
 namespace Catering
 {
@@ -33,14 +34,14 @@ namespace Catering
 
     public class CateringBot : ActivityHandler
     {
-        private const string WelcomeText = "This bot will introduce you to AdaptiveApps. Type anything to get started.";
+        private const string WelcomeText = "Welcome to the Adaptive Cards 2.0 Bot. This bot will introduce you to Action.Execute in Adaptive Cards. Type anything to get started.";
         private BotState _userState;
-        private LunchRepository _lunchRepository;
+        private CateringDb _cateringDb;
 
-        public CateringBot(UserState userState, LunchRepository lunchRepository)
+        public CateringBot(UserState userState, CateringDb cateringDb)
         {
             _userState = userState;
-            _lunchRepository = lunchRepository;
+            _cateringDb = cateringDb;
         }
 
         public override async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
@@ -85,7 +86,7 @@ namespace Catering
                         var cardOptions = AdaptiveCardInvokeValidator.ValidateAction<CardOptions>(request);
 
                         // process action
-                        var responseBody = ProcessOrderAction(user, cardOptions);
+                        var responseBody = await ProcessOrderAction(user, cardOptions);
                         
                         return CreateInvokeResponse(HttpStatusCode.OK, responseBody);
                     }
@@ -103,7 +104,7 @@ namespace Catering
             return null;
         }
 
-        private AdaptiveCardInvokeResponse ProcessOrderAction(User user, CardOptions cardOptions)
+        private async Task<AdaptiveCardInvokeResponse> ProcessOrderAction(User user, CardOptions cardOptions)
         {
             if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Entre)
             {
@@ -127,11 +128,11 @@ namespace Catering
                     responseBody = ReviewCardResponse(user);
                     break;
                 case Card.ReviewAll:
-                    var latestOrders = _lunchRepository.GetLatestOrders();
-                    // TODO: show all the orders
+                    var latestOrders = await _cateringDb.GetRecentOrdersAsync();
+                    responseBody = RecentOrdersCardResponse(latestOrders.Items);
                     break;
                 case Card.Confirmation:
-                    _lunchRepository.UpsertOrder(user);
+                    await _cateringDb.AddOrderAsync(user);
                     responseBody = ConfirmationCardResponse();
                     break;
                 default:
@@ -156,7 +157,7 @@ namespace Catering
             {
                 if (member.Id != turnContext.Activity.Recipient.Id)
                 {
-                    var message = MessageFactory.Text($"Welcome to the Adaptive Apps Bot {member.Name}. {WelcomeText}");
+                    var message = MessageFactory.Text(WelcomeText);
                     await turnContext.SendActivityAsync(message, cancellationToken: cancellationToken);
                 }
             }
@@ -265,6 +266,23 @@ namespace Catering
         private AdaptiveCardInvokeResponse ReviewCardResponse(User user)
         {
             return CardResponse("ReviewOrder.json", user.Lunch);
+        }
+
+        private AdaptiveCardInvokeResponse RecentOrdersCardResponse(IList<User> users)
+        {
+            return CardResponse("RecentOrders.json", 
+                new
+                {
+                    users = users.Select(u => new 
+                    { 
+                        lunch = new
+                        { 
+                            entre = u.Lunch.Entre,
+                            drink = u.Lunch.Drink,
+                            orderTimestamp = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(u.Lunch.OrderTimestamp, "Pacific Standard Time").ToString("g")
+                        }
+                    }).ToList()
+                });
         }
 
         private AdaptiveCardInvokeResponse ConfirmationCardResponse()

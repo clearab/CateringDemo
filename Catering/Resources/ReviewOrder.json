@@ -14,11 +14,11 @@
     },
     {
       "type": "TextBlock",
-      "text": "Entre: {Entre}"
+      "text": "Entre: {entre}"
     },
     {
       "type": "TextBlock",
-      "text": "Drink: {Drink}"
+      "text": "Drink: {drink}"
     },
     {
       "type": "ActionSet",
