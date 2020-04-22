@@ -18,6 +18,7 @@ using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using Microsoft.Bot.AdaptiveCards;
 using System.Linq;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace Catering
 {
@@ -37,11 +38,13 @@ namespace Catering
         private const string WelcomeText = "Welcome to the Adaptive Cards 2.0 Bot. This bot will introduce you to Action.Execute in Adaptive Cards. Type anything to get started.";
         private BotState _userState;
         private CateringDb _cateringDb;
+        private readonly CateringRecognizer _cateringRecognizer;
 
-        public CateringBot(UserState userState, CateringDb cateringDb)
+        public CateringBot(UserState userState, CateringDb cateringDb, CateringRecognizer cateringRecognizer)
         {
             _userState = userState;
             _cateringDb = cateringDb;
+            _cateringRecognizer = cateringRecognizer;
         }
 
         public override async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
@@ -106,12 +109,31 @@ namespace Catering
 
         private async Task<AdaptiveCardInvokeResponse> ProcessOrderAction(User user, CardOptions cardOptions)
         {
-            if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Entre)
+            if ((Card)cardOptions.currentCard == Card.Entre)
             {
+                if (!string.IsNullOrEmpty(cardOptions.custom))
+                {
+                    if (!await _cateringRecognizer.ValidateEntre(cardOptions.custom))
+                    {
+                        return RedoEntreCardResponse(new Lunch() { Entre = cardOptions.custom });
+                    }
+                    cardOptions.option = cardOptions.custom;
+                }
+
                 user.Lunch.Entre = cardOptions.option;
             }
-            else if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Drink)
+            else if ((Card)cardOptions.currentCard == Card.Drink)
             {
+                if (!string.IsNullOrEmpty(cardOptions.custom))
+                {
+                    if (!await _cateringRecognizer.ValidateDrink(cardOptions.custom))
+                    {
+                        return RedoDrinkCardResponse(new Lunch() { Drink = cardOptions.custom });
+                    }
+
+                    cardOptions.option = cardOptions.custom;
+                }
+
                 user.Lunch.Drink = cardOptions.option;
             }
 
@@ -268,6 +290,16 @@ namespace Catering
             return CardResponse("ReviewOrder.json", user.Lunch);
         }
 
+        private AdaptiveCardInvokeResponse RedoDrinkCardResponse(Lunch lunch)
+        {
+            return CardResponse("RedoDrinkOptions.json", lunch);
+        }
+
+        private AdaptiveCardInvokeResponse RedoEntreCardResponse(Lunch lunch)
+        {
+            return CardResponse("RedoEntreOptions.json", lunch);
+        }
+
         private AdaptiveCardInvokeResponse RecentOrdersCardResponse(IList<User> users)
         {
             return CardResponse("RecentOrders.json", 
@@ -298,6 +330,7 @@ namespace Catering
         public int? nextCardToSend { get; set; }
         public int? currentCard { get; set; }
         public string option { get; set; }
+        public string custom { get; set; }
     }
 
    

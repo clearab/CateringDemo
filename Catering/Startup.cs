@@ -27,7 +27,7 @@ namespace Catering
             // Create the Bot Framework Adapter with error handling enabled.
             services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
 
-            services.AddSingleton<LunchRepository>();
+            services.AddSingleton<CateringRecognizer>();
 
             services.AddTransient<CateringDb>();
 

@@ -75,7 +75,7 @@
           "items": [
             {
               "type": "Input.Text",
-              "id": "option",
+              "id": "custom",
               "placeholder": "Custom"
             }
           ]

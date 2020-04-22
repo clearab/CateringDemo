@@ -1,19 +1,23 @@
 {
-  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
   "appId": "86ee312e-e8f2-4a03-9515-4ac80986abd5",
   "body": [
     {
       "type": "TextBlock",
-      "text": "What would you like for lunch?",
+      "text": "Oh no!",
       "size": "Medium",
       "weight": "Bolder"
+    },
+    {
+      "type": "TextBlock",
+      "text": "We don't have {drink}. Please order something else."
     },
     {
       "type": "RichTextBlock",
       "inlines": [
         {
           "type": "TextRun",
-          "text": "Standard Entres",
+          "text": "Standard Drinks",
           "italic": true,
           "size": "medium"
         }
@@ -25,31 +29,31 @@
         {
           "type": "Action.Execute",
           "verb": "order",
-          "title": "Chicken",
+          "title": "Coffee",
           "data": {
-            "nextCardToSend": 1,
-            "currentCard": 0,
-            "option": "chicken"
+            "nextCardToSend": 2,
+            "currentCard": 1,
+            "option": "coffee"
           }
         },
         {
           "type": "Action.Execute",
           "verb": "order",
-          "title": "Beef",
+          "title": "Tea",
           "data": {
-            "nextCardToSend": 1,
-            "currentCard": 0,
-            "option": "beef"
+            "nextCardToSend": 2,
+            "currentCard": 1,
+            "option": "tea"
           }
         },
         {
           "type": "Action.Execute",
           "verb": "order",
-          "title": "Vegan",
+          "title": "Water",
           "data": {
-            "nextCardToSend": 1,
-            "currentCard": 0,
-            "option": "vegan"
+            "currentCard": 1,
+            "nextCardToSend": 2,
+            "option": "water"
           }
         }
       ]
@@ -93,8 +97,8 @@
                   "verb": "order",
                   "title": "Custom",
                   "data": {
-                    "nextCardToSend": 1,
-                    "currentCard": 0
+                    "currentCard": 1,
+                    "nextCardToSend": 2
                   }
                 }
               ]
@@ -104,6 +108,6 @@
       ]
     }
   ],
-  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
   "version": "1.2"
 }
