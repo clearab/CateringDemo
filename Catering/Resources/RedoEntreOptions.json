@@ -4,9 +4,13 @@
   "body": [
     {
       "type": "TextBlock",
-      "text": "What would you like for lunch?",
+      "text": "Oh no!",
       "size": "Medium",
       "weight": "Bolder"
+    },
+    {
+      "type": "TextBlock",
+      "text": "We don't have {entre}. Please order something else."
     },
     {
       "type": "RichTextBlock",
