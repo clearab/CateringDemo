@@ -9,6 +9,17 @@
       "weight": "Bolder"
     },
     {
+      "type": "RichTextBlock",
+      "inlines": [
+        {
+          "type": "TextRun",
+          "text": "Standard Entres",
+          "italic": true,
+          "size": "medium"
+        }
+      ]
+    },
+    {
       "type": "ActionSet",
       "actions": [
         {
@@ -40,6 +51,55 @@
             "currentCard": 0,
             "option": "vegan"
           }
+        }
+      ]
+    },
+    {
+      "type": "RichTextBlock",
+      "inlines": [
+        {
+          "type": "TextRun",
+          "text": "Custom Order",
+          "italic": true,
+          "size": "medium"
+        }
+      ]
+    },
+    {
+      "type": "ColumnSet",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "stretch",
+          "verticalContentAlignment": "Center",
+          "items": [
+            {
+              "type": "Input.Text",
+              "id": "option",
+              "placeholder": "Custom"
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "auto",
+          "verticalContentAlignment": "Center",
+          "items": [
+            {
+              "type": "ActionSet",
+              "actions": [
+                {
+                  "type": "Action.Execute",
+                  "verb": "order",
+                  "title": "Custom",
+                  "data": {
+                    "nextCardToSend": 1,
+                    "currentCard": 0
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     }
