@@ -63,13 +63,22 @@ namespace Catering
             var userSA = _userState.CreateProperty<User>(nameof(User));
             var user = await userSA.GetAsync(turnContext, () => new User());
 
-            if (turnContext.Activity.Value != null)
+            var text = turnContext.Activity.Text.ToLowerInvariant();
+
+            if (text.Contains("recent"))
             {
-                await processCardAction(turnContext, user, cancellationToken);
+                await SendRecentOrdersCardMessage(turnContext, cancellationToken);
             }
             else
             {
-                await SendEntreCardMessage(turnContext, cancellationToken);
+                if (turnContext.Activity.Value != null)
+                {
+                    await processCardAction(turnContext, user, cancellationToken);
+                }
+                else
+                {
+                    await SendEntreCardMessage(turnContext, cancellationToken);
+                }
             }
         }
 
@@ -210,7 +219,7 @@ namespace Catering
                     await SendReviewCardMessage(turnContext, user, cancellationToken);
                     break;
                 case Card.ReviewAll:
-                    await SendReviewAllCardMessage(turnContext, cancellationToken);
+                    await SendRecentOrdersCardMessage(turnContext, cancellationToken);
                     break;
                 case Card.Confirmation:
                     await SendConfirmationCardMessage(turnContext, cancellationToken);
@@ -246,9 +255,24 @@ namespace Catering
                 MessageFactory.Attachment(new CardResource("Confirmation.json").AsAttachment()), cancellationToken);
         }
 
-        private Task SendReviewAllCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
+        private async Task SendRecentOrdersCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var latestOrders = await _cateringDb.GetRecentOrdersAsync();
+            var users = latestOrders.Items;
+            await turnContext.SendActivityAsync(
+                MessageFactory.Attachment(new CardResource("RecentOrders.json").AsAttachment(
+                    new
+                    {
+                        users = users.Select(u => new
+                        {
+                            lunch = new
+                            {
+                                entre = u.Lunch.Entre,
+                                drink = u.Lunch.Drink,
+                                orderTimestamp = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(u.Lunch.OrderTimestamp, "Pacific Standard Time").ToString("g")
+                            }
+                        }).ToList()
+                    })), cancellationToken);
         }
 
         #endregion
