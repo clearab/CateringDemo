@@ -33,8 +33,8 @@ namespace Catering.Controllers
                     User = new { Id = userId }, 
                     TrustedOrigins = new string[] 
                     { 
-                        "http://localhost:2978", 
-                        "https://catering.azurewebsites.net/" 
+                        "http://localhost:2978",
+                        "https://jeffcateringbot.azurewebsites.net"
                     }
                 }),
                 Encoding.UTF8,

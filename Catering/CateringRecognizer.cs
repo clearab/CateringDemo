@@ -23,29 +23,28 @@ namespace Catering
             "distilled"
         };
 
-
-        public async Task<bool> ValidateEntre(string entre)
+        public Task<bool> ValidateEntre(string entre)
         {
             var value = entre.ToLowerInvariant();
 
             if (invalidEntres.Any(e => value.Contains(e)))
             {
-                return false;
+                return Task.FromResult(false);
             }
 
-            return true;
+            return Task.FromResult(true);
         }
 
-        public async Task<bool> ValidateDrink(string drink)
+        public Task<bool> ValidateDrink(string drink)
         {
             var value = drink.ToLowerInvariant();
 
             if (invalidDrinks.Any(e => value.Contains(e)))
             {
-                return false;
+                return Task.FromResult(false);
             }
 
-            return true;
+            return Task.FromResult(true);
         }
     }
 }

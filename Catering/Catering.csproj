@@ -6,12 +6,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\Message.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\Message.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AdaptiveCards" Version="1.0.3" />
     <PackageReference Include="AdaptiveCards.Templating" Version="0.1.0-alpha1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.1" />
     <PackageReference Include="Microsoft.Bot.Builder.Azure" Version="4.8.0" />
     <PackageReference Include="Microsoft.Bot.Builder.Dialogs" Version="4.8.0" />
     <PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.8.0" />
+    <PackageReference Include="Microsoft.Graph" Version="3.3.0" />
   </ItemGroup>
 
   <ItemGroup>
