@@ -177,7 +177,7 @@ namespace Catering
                     responseBody = RecentOrdersCardResponse(latestOrders.Items);
                     break;
                 case Card.Confirmation:
-                    await _cateringDb.AddOrderAsync(user);
+                    await _cateringDb.UpsertOrderAsync(user);
                     responseBody = ConfirmationCardResponse();
                     break;
                 default:
