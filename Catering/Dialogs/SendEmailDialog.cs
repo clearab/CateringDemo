@@ -22,7 +22,9 @@ namespace Catering.Dialogs
         protected readonly IConfiguration Configuration;
         protected readonly UserState UserState;
         protected readonly string _originatorId;
-        
+        IStatePropertyAccessor<string> _targetEmail;
+        const string TargetEmailProperty = "TargetEmail";
+
         public SendEmailDialog(UserState userState, IConfiguration configuration)
             : base(nameof(SendEmailDialog))
         {
@@ -33,14 +35,11 @@ namespace Catering.Dialogs
 
             _originatorId = Configuration.GetSection("OriginatorId")?.Value;
 
+            _targetEmail = userState.CreateProperty<string>(TargetEmailProperty);
 
             var steps = new WaterfallStep[] {
                 SignInAsync,
                 DisplayTokenAsync,
-                //PromptForDifficultyAsync,
-                //SaveDifficultyAsync,
-                //StartWorkoutAsync,
-                //EndWorkoutAsync
             };
 
             AddDialog(new WaterfallDialog(nameof(SendEmailDialog), steps));
@@ -49,6 +48,17 @@ namespace Catering.Dialogs
 
         private async Task<DialogTurnResult> SignInAsync(WaterfallStepContext context, CancellationToken cancellationToken)
         {
+            var text = context.Context.Activity.Text;
+            var parts = text.Split(' ');
+            var email = parts.Length > 1 ? parts.Last() : string.Empty;
+
+            if (!email.Contains("@"))
+            {
+                email = String.Empty;
+            }
+
+            await _targetEmail.SetAsync(context.Context, email, cancellationToken);
+
             return await context.BeginDialogAsync(
                 nameof(OAuthPrompt),
                 null,
@@ -57,17 +67,18 @@ namespace Catering.Dialogs
 
         private async Task<DialogTurnResult> DisplayTokenAsync(WaterfallStepContext context, CancellationToken cancellationToken)
         {
-            // Save the duration
             var tokenResponse = (TokenResponse)context.Result;
 
-            await SendMessageAsync(context, tokenResponse.Token);
+            var email = await _targetEmail.GetAsync(context.Context, () => String.Empty, cancellationToken);
+
+            await SendMessageAsync(context, tokenResponse.Token, email);
 
             return await context.EndDialogAsync(null, cancellationToken);
         }
 
 
 
-        private async Task SendMessageAsync(WaterfallStepContext context, string token)
+        private async Task SendMessageAsync(WaterfallStepContext context, string token, string email)
         {
             try
             {
@@ -83,11 +94,17 @@ namespace Catering.Dialogs
 
                 // Create a recipient
                 var me = await graphClient.Me.Request().GetAsync();
+                
+                if (string.IsNullOrEmpty(email))
+                {
+                    email = me.Mail;
+                }
+                
                 var toRecip = new Recipient()
                 {
                     EmailAddress = new EmailAddress()
                     {
-                        Address = me.Mail
+                        Address = email
                     }
                 };
 
@@ -107,7 +124,7 @@ namespace Catering.Dialogs
                 // Send the message
                 await graphClient.Me.SendMail(actionableMessage, true).Request().PostAsync();
 
-                await context.Context.SendActivityAsync("Actionable message sent!");
+                await context.Context.SendActivityAsync($"Actionable message sent to {email}!");
             }
             catch (ServiceException graphEx)
             {
