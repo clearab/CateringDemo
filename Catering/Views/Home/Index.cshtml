@@ -17,14 +17,6 @@
 </script>
 <script src="default-channel-adapter.js" type="text/babel">
 </script>
-<script src="demo-card-attachment-middleware.js" type="text/babel">
-</script>
-<script src="demo-card-channel-adapter.js" type="text/babel">
-</script>
-<script src="demo-card.js" type="text/babel">
-</script>
-<script src="fetch-bot-token.js" type="text/babel">
-</script>
 <script src="redux-compose.js" type="text/babel">
 </script>
 
@@ -38,6 +30,13 @@
 
 <div id="root"></div>
 <script  type="text/babel">
+
+    const {
+      AAFRuntime: { AdaptiveApplet },
+    } = window;
+
+    AAFRuntime.GlobalSettings.refresh.mode = 2;
+    AAFRuntime.GlobalSettings.refresh.timeBetweenAutomaticRefreshes = 5000;
 
     (async function () {
         // Imports.
@@ -58,22 +57,12 @@
         });
 
         const store = createStore({}, ({ dispatch }) => next => action => {
-            //// TODO: Remove this. This is for dev RTT, so we don't need to type anything after F5.
-            //action.type === 'DIRECT_LINE/CONNECT_FULFILLED' &&
-            //    dispatch({
-            //        type: 'WEB_CHAT/SEND_MESSAGE',
-            //        payload: {
-            //            text: 'card markdown'
-            //        }
-            //    });
-
             return next(action);
         });
 
         // This is composing 2 middlewares into a single middleware.
         const attachmentMiddleware = options => {
             const middlewares = [
-                //createDemoCardAttachmentMiddleware({ directLine }),
                 createAAFAttachmentMiddleware({ directLine })
             ];
 

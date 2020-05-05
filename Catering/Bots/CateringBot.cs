@@ -59,32 +59,14 @@ namespace Catering
 
         protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
         {
-            await SendWelcomeMessageAsync(turnContext, cancellationToken);
+            if (turnContext.Activity.ChannelId == "directline" || turnContext.Activity.ChannelId == "webchat")
+            {
+                await SendWelcomeMessageAsync(turnContext, cancellationToken);
+            }
         }
         protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
         {
             await _dialog.RunAsync(turnContext, _userState.CreateProperty<DialogState>(nameof(DialogState)), cancellationToken);
-
-            //var userSA = _userState.CreateProperty<User>(nameof(User));
-            //var user = await userSA.GetAsync(turnContext, () => new User());
-
-            //var text = turnContext.Activity.Text.ToLowerInvariant();
-
-            //if (text.Contains("recent"))
-            //{
-            //    await SendRecentOrdersCardMessage(turnContext, cancellationToken);
-            //}
-            //else
-            //{
-            //    if (turnContext.Activity.Value != null)
-            //    {
-            //        await processCardAction(turnContext, user, cancellationToken);
-            //    }
-            //    else
-            //    {
-            //        await SendEntreCardMessage(turnContext, cancellationToken);
-            //    }
-            //}
         }
         protected override async Task OnEndOfConversationActivityAsync(ITurnContext<IEndOfConversationActivity> turnContext, CancellationToken cancellationToken)
         {
@@ -208,89 +190,6 @@ namespace Catering
                 }
             }
         }
-
-        //private async Task processCardAction(ITurnContext<IMessageActivity> turnContext, User user, CancellationToken cancellationToken)
-        //{
-        //    var data = JsonConvert.DeserializeObject<CardOptions>(turnContext.Activity.Value.ToString());
-
-        //    if (data.option != null && (Card)data.currentCard == Card.Entre)
-        //    {
-        //        user.Lunch.Entre = data.option;
-        //    }
-        //    else if (data.option != null && (Card)data.currentCard == Card.Drink)
-        //    {
-        //        user.Lunch.Drink = data.option;
-        //    }
-
-        //    switch ((Card)data.nextCardToSend)
-        //    {
-        //        case Card.Drink:
-        //            await SendDrinkCardMessage(turnContext, cancellationToken);
-        //            break;
-        //        case Card.Entre:
-        //            await SendEntreCardMessage(turnContext, cancellationToken);
-        //            break;
-        //        case Card.Review:
-        //            await SendReviewCardMessage(turnContext, user, cancellationToken);
-        //            break;
-        //        case Card.ReviewAll:
-        //            await SendRecentOrdersCardMessage(turnContext, cancellationToken);
-        //            break;
-        //        case Card.Confirmation:
-        //            await SendConfirmationCardMessage(turnContext, cancellationToken);
-        //            break;
-        //        default:
-        //            throw new NotImplementedException("No card matches that nextCardToSend.");
-        //    }
-        //}
-
-        //#region Cards As MessageActivities
-
-        //private async Task SendDrinkCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-        //{
-        //    await turnContext.SendActivityAsync(
-        //        MessageFactory.Attachment(new CardResource("DrinkOptions.json").AsAttachment()), cancellationToken);
-        //}
-
-        //private async Task SendEntreCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-        //{
-        //    await turnContext.SendActivityAsync(
-        //        MessageFactory.Attachment(new CardResource("EntreOptions.json").AsAttachment()), cancellationToken);
-        //}
-
-        //private async Task SendReviewCardMessage(ITurnContext turnContext, User user, CancellationToken cancellationToken)
-        //{
-        //    await turnContext.SendActivityAsync(
-        //        MessageFactory.Attachment(new CardResource("ReviewOrder.json").AsAttachment(user.Lunch)), cancellationToken);
-        //}
-
-        //private async Task SendConfirmationCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-        //{
-        //    await turnContext.SendActivityAsync(
-        //        MessageFactory.Attachment(new CardResource("Confirmation.json").AsAttachment()), cancellationToken);
-        //}
-
-        //private async Task SendRecentOrdersCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-        //{
-        //    var latestOrders = await _cateringDb.GetRecentOrdersAsync();
-        //    var users = latestOrders.Items;
-        //    await turnContext.SendActivityAsync(
-        //        MessageFactory.Attachment(new CardResource("RecentOrders.json").AsAttachment(
-        //            new
-        //            {
-        //                users = users.Select(u => new
-        //                {
-        //                    lunch = new
-        //                    {
-        //                        entre = u.Lunch.Entre,
-        //                        drink = u.Lunch.Drink,
-        //                        orderTimestamp = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(u.Lunch.OrderTimestamp, "Pacific Standard Time").ToString("g")
-        //                    }
-        //                }).ToList()
-        //            })), cancellationToken);
-        //}
-
-        //#endregion
 
         #region Cards As InvokeResponses
 
