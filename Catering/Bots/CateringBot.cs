@@ -18,6 +18,8 @@ using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using Microsoft.Bot.AdaptiveCards;
 using System.Linq;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Bot.Builder.Dialogs;
 
 namespace Catering
 {
@@ -32,16 +34,20 @@ namespace Catering
     // class is created. Objects that are expensive to construct, or have a lifetime
     // beyond the single turn, should be carefully managed.
 
-    public class CateringBot : ActivityHandler
+    public class CateringBot<TDialog> : ActivityHandler where TDialog : Dialog
     {
-        private const string WelcomeText = "Welcome to the Adaptive Cards 2.0 Bot. This bot will introduce you to Action.Execute in Adaptive Cards. Type anything to get started.";
+        private const string WelcomeText = "Welcome to the Adaptive Cards 2.0 Bot. This bot will introduce you to Action.Execute in Adaptive Cards.";
         private BotState _userState;
         private CateringDb _cateringDb;
+        private readonly CateringRecognizer _cateringRecognizer;
+        private readonly Dialog _dialog;
 
-        public CateringBot(UserState userState, CateringDb cateringDb)
+        public CateringBot(UserState userState, CateringDb cateringDb, CateringRecognizer cateringRecognizer, TDialog dialog)
         {
             _userState = userState;
             _cateringDb = cateringDb;
+            _cateringRecognizer = cateringRecognizer;
+            _dialog = dialog;
         }
 
         public override async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
@@ -53,21 +59,23 @@ namespace Catering
 
         protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
         {
-            await SendWelcomeMessageAsync(turnContext, cancellationToken);
+            if (turnContext.Activity.ChannelId == "directline" || turnContext.Activity.ChannelId == "webchat")
+            {
+                await SendWelcomeMessageAsync(turnContext, cancellationToken);
+            }
         }
         protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
         {
-            var userSA = _userState.CreateProperty<User>(nameof(User));
-            var user = await userSA.GetAsync(turnContext, () => new User());
+            await _dialog.RunAsync(turnContext, _userState.CreateProperty<DialogState>(nameof(DialogState)), cancellationToken);
+        }
+        protected override async Task OnEndOfConversationActivityAsync(ITurnContext<IEndOfConversationActivity> turnContext, CancellationToken cancellationToken)
+        {
+            await _dialog.RunAsync(turnContext, _userState.CreateProperty<DialogState>(nameof(DialogState)), cancellationToken);
+        }
 
-            if (turnContext.Activity.Value != null)
-            {
-                await processCardAction(turnContext, user, cancellationToken);
-            }
-            else
-            {
-                await SendEntreCardMessage(turnContext, cancellationToken);
-            }
+        protected override async Task OnEventActivityAsync(ITurnContext<IEventActivity> turnContext, CancellationToken cancellationToken)
+        {
+            await _dialog.RunAsync(turnContext, _userState.CreateProperty<DialogState>(nameof(DialogState)), cancellationToken);
         }
 
         protected override async Task<InvokeResponse> OnInvokeActivityAsync(ITurnContext<IInvokeActivity> turnContext, CancellationToken cancellationToken)
@@ -106,12 +114,31 @@ namespace Catering
 
         private async Task<AdaptiveCardInvokeResponse> ProcessOrderAction(User user, CardOptions cardOptions)
         {
-            if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Entre)
+            if ((Card)cardOptions.currentCard == Card.Entre)
             {
+                if (!string.IsNullOrEmpty(cardOptions.custom))
+                {
+                    if (!await _cateringRecognizer.ValidateEntre(cardOptions.custom))
+                    {
+                        return RedoEntreCardResponse(new Lunch() { Entre = cardOptions.custom });
+                    }
+                    cardOptions.option = cardOptions.custom;
+                }
+
                 user.Lunch.Entre = cardOptions.option;
             }
-            else if (cardOptions.option != null && (Card)cardOptions.currentCard == Card.Drink)
+            else if ((Card)cardOptions.currentCard == Card.Drink)
             {
+                if (!string.IsNullOrEmpty(cardOptions.custom))
+                {
+                    if (!await _cateringRecognizer.ValidateDrink(cardOptions.custom))
+                    {
+                        return RedoDrinkCardResponse(new Lunch() { Drink = cardOptions.custom });
+                    }
+
+                    cardOptions.option = cardOptions.custom;
+                }
+
                 user.Lunch.Drink = cardOptions.option;
             }
 
@@ -132,7 +159,7 @@ namespace Catering
                     responseBody = RecentOrdersCardResponse(latestOrders.Items);
                     break;
                 case Card.Confirmation:
-                    await _cateringDb.AddOrderAsync(user);
+                    await _cateringDb.UpsertOrderAsync(user);
                     responseBody = ConfirmationCardResponse();
                     break;
                 default:
@@ -159,77 +186,10 @@ namespace Catering
                 {
                     var message = MessageFactory.Text(WelcomeText);
                     await turnContext.SendActivityAsync(message, cancellationToken: cancellationToken);
+                    await turnContext.SendActivityAsync($"Type anything to see a card here, type email to send a card through Outlook, or type recents to see recent orders.");
                 }
             }
         }
-
-        private async Task processCardAction(ITurnContext<IMessageActivity> turnContext, User user, CancellationToken cancellationToken)
-        {
-            var data = JsonConvert.DeserializeObject<CardOptions>(turnContext.Activity.Value.ToString());
-
-            if (data.option != null && (Card)data.currentCard == Card.Entre)
-            {
-                user.Lunch.Entre = data.option;
-            }
-            else if (data.option != null && (Card)data.currentCard == Card.Drink)
-            {
-                user.Lunch.Drink = data.option;
-            }
-
-            switch ((Card)data.nextCardToSend)
-            {
-                case Card.Drink:
-                    await SendDrinkCardMessage(turnContext, cancellationToken);
-                    break;
-                case Card.Entre:
-                    await SendEntreCardMessage(turnContext, cancellationToken);
-                    break;
-                case Card.Review:
-                    await SendReviewCardMessage(turnContext, user, cancellationToken);
-                    break;
-                case Card.ReviewAll:
-                    await SendReviewAllCardMessage(turnContext, cancellationToken);
-                    break;
-                case Card.Confirmation:
-                    await SendConfirmationCardMessage(turnContext, cancellationToken);
-                    break;
-                default:
-                    throw new NotImplementedException("No card matches that nextCardToSend.");
-            }
-        }
-
-        #region Cards As MessageActivities
-
-        private async Task SendDrinkCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-        {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Attachment(new CardResource("DrinkOptions.json").AsAttachment()), cancellationToken);
-        }
-
-        private async Task SendEntreCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-        {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Attachment(new CardResource("EntreOptions.json").AsAttachment()), cancellationToken);
-        }
-
-        private async Task SendReviewCardMessage(ITurnContext turnContext, User user, CancellationToken cancellationToken)
-        {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Attachment(new CardResource("ReviewOrder.json").AsAttachment(user.Lunch)), cancellationToken);
-        }
-
-        private async Task SendConfirmationCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-        {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Attachment(new CardResource("Confirmation.json").AsAttachment()), cancellationToken);
-        }
-
-        private Task SendReviewAllCardMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
 
         #region Cards As InvokeResponses
 
@@ -268,6 +228,16 @@ namespace Catering
             return CardResponse("ReviewOrder.json", user.Lunch);
         }
 
+        private AdaptiveCardInvokeResponse RedoDrinkCardResponse(Lunch lunch)
+        {
+            return CardResponse("RedoDrinkOptions.json", lunch);
+        }
+
+        private AdaptiveCardInvokeResponse RedoEntreCardResponse(Lunch lunch)
+        {
+            return CardResponse("RedoEntreOptions.json", lunch);
+        }
+
         private AdaptiveCardInvokeResponse RecentOrdersCardResponse(IList<User> users)
         {
             return CardResponse("RecentOrders.json", 
@@ -292,24 +262,4 @@ namespace Catering
 
         #endregion
     }
-
-    internal class CardOptions
-    {
-        public int? nextCardToSend { get; set; }
-        public int? currentCard { get; set; }
-        public string option { get; set; }
-    }
-
-   
-
-    enum Card : int
-    {
-        Entre = 0,
-        Drink = 1,
-        Review = 2,
-        ReviewAll = 3,
-        Confirmation = 4
-    }
-
-    
 }

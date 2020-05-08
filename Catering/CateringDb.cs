@@ -113,7 +113,7 @@ namespace Catering
             return results;
         }
 
-        public async Task<Model.User> AddOrderAsync(Model.User user)
+        public async Task<Model.User> UpsertOrderAsync(Model.User user)
         {
             if (user.Id == null)
             {
@@ -123,8 +123,7 @@ namespace Catering
             user.PartitionKey = PartitionKeyValue;
             user.Lunch.OrderTimestamp = DateTime.UtcNow;
 
-            ItemResponse<Model.User> response = await this._container.Value.CreateItemAsync<Model.User>(user, new PartitionKey(PartitionKeyValue));
-
+            ItemResponse<Model.User> response = await this._container.Value.UpsertItemAsync(user, new PartitionKey(PartitionKeyValue));
             return response.Resource;
         }
     }
