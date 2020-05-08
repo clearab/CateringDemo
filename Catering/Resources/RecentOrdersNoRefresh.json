@@ -1,17 +1,6 @@
 {
   "type": "AdaptiveCard",
   "appId": "86ee312e-e8f2-4a03-9515-4ac80986abd5",
-  "autoRefresh": {
-    "action": {
-      "type": "Action.Execute",
-      "verb": "order",
-      "data": {
-        "nextCardToSend": 3,
-        "currentCard": 4,
-        "option": ""
-      }
-    }
-  },
   "body": [
     {
       "type": "Container",
